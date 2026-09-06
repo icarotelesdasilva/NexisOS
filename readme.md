@@ -555,7 +555,7 @@ These are expected limitations at this stage of development.
 
 ## License
 
-NexisOS is licensed under the **MIT**.
+NexisOS is licensed under the **GNU General Public License v2.0 only (GPL-2.0-only)**.
 
 See the `LICENSE` file for the complete license text.
 
