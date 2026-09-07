@@ -6,167 +6,208 @@
 
 <p align="center">
   <a href="#overview">Overview</a> •
+  <a href="#goals">Goals</a> •
   <a href="#architecture">Architecture</a> •
+  <a href="#nexisk">NexisK</a> •
+  <a href="#nexisloader">NexisLoader</a> •
+  <a href="#memory-management">Memory Management</a> •
+  <a href="#interrupts">Interrupts</a> •
   <a href="#current-status">Current Status</a> •
-  <a href="#features">Features</a> •
-  <a href="#roadmap">Roadmap</a> •
-  <a href="#building">Building</a>
+  <a href="#building">Building</a> •
+  <a href="#roadmap">Roadmap</a>
 </p>
 
 ## Overview
 
 **NexisOS** is the practical operating system built around the **NexisK kernel**.
 
-The purpose of this project is to take the kernel concepts developed in NexisK and put them into practice as an actual operating system environment.
+The project exists to take the kernel architecture and subsystems developed in NexisK and integrate them into a complete, bootable operating-system environment.
 
-Instead of testing kernel subsystems only in isolation, NexisOS integrates them into a single bootable system where the kernel, bootloader, memory management, interrupts, hardware drivers, input handling, and user-facing interfaces work together.
-
-NexisOS is therefore the practical execution environment for NexisK.
+Instead of treating kernel components as isolated experiments, NexisOS brings together the bootloader, kernel, memory management, interrupt handling, hardware drivers, input system, terminal, and shell into a single system that can be booted and tested as an operating system.
 
 > **NexisK develops the kernel. NexisOS puts the kernel into practice.**
 
-The project is developed from low-level fundamentals, with direct interaction with x86 hardware and minimal reliance on external operating-system infrastructure.
+NexisOS is developed from low-level fundamentals, with direct interaction with x86 hardware and minimal dependence on external operating-system infrastructure.
+
+The project currently targets **32-bit x86 (i386)** hardware and is designed around the Nexis ecosystem's own boot and kernel components.
 
 ## Goals
 
-NexisOS focuses on learning and implementing the fundamental components required to build an operating system from the ground up.
+The primary goal of NexisOS is to provide a real environment in which NexisK can be integrated, executed, tested, and evolved.
 
-The main goals are:
+The project focuses on:
 
-* Put NexisK into practice as a real operating system.
-* Integrate kernel subsystems into a functional environment.
-* Boot directly through the Nexis boot chain.
-* Manage physical memory.
-* Handle hardware interrupts.
-* Communicate with hardware devices.
-* Provide keyboard input.
-* Provide a basic terminal environment.
-* Experiment with processes and scheduling.
-* Test the system on real x86 hardware.
-* Keep the implementation understandable and close to the hardware.
+* Integrating NexisK into a bootable operating system.
+* Using NexisLoader as the system boot environment.
+* Managing physical memory.
+* Processing the system's E820 memory map.
+* Handling hardware interrupts.
+* Communicating directly with hardware devices.
+* Providing keyboard input.
+* Providing a VGA-based terminal.
+* Providing a basic interactive shell.
+* Experimenting with processes and scheduling.
+* Testing the system under x86 emulation and real hardware.
+* Keeping the implementation close to the underlying hardware.
 
-NexisOS is not intended to reproduce an existing operating system. It is an independent systems programming project.
+NexisOS is not intended to reproduce an existing operating system.
+
+It is an independent systems-programming project built from low-level components.
 
 ## Architecture
 
-NexisOS is built around several independent components that work together.
+NexisOS is composed of several independent projects and subsystems that operate together as a single bootable system.
 
 ```text
-                    ┌──────────────────────┐
-                    │       NexisOS        │
-                    │   Operating System   │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │       NexisK         │
-                    │        Kernel        │
-                    └──────────┬───────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-   Memory Management       Interrupts             Drivers
-        │                      │                      │
-       PMM                  IDT/PIC              VGA/Serial
-        │                      │                  Keyboard
-        │                      │                   Mouse
-        └──────────────────────┼──────────────────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │    NexisLoader       │
-                    │      Bootloader       │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────▼───────────┐
-                    │      x86 Hardware     │
-                    └──────────────────────┘
+                         NexisOS
+                    Operating System
+                           │
+                           ▼
+                        NexisK
+                         Kernel
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+       Memory          Interrupts        Drivers
+       Manager            │                │
+          │            IDT / PIC       VGA / Serial
+         PMM               │            Keyboard
+          │              PIT              Mouse
+          └────────────────┼────────────────┘
+                           │
+                           ▼
+                     NexisLoader
+                       Bootloader
+                           │
+                           ▼
+                      x86 Hardware
 ```
 
-The architecture is intentionally kept modular so individual subsystems can be developed and tested independently before being integrated into the operating system.
+The boot chain is conceptually:
+
+```text
+BIOS
+ │
+ ▼
+NexisLoader
+ │
+ ├── Detect system memory
+ ├── Prepare boot environment
+ ├── Load NexisK
+ │
+ ▼
+NexisK
+ │
+ ├── Initialize CPU environment
+ ├── Initialize interrupts
+ ├── Initialize memory
+ ├── Initialize hardware
+ └── Start kernel services
+ │
+ ▼
+NexisOS
+```
+
+The separation between projects allows each component to have a clearly defined responsibility.
 
 ## NexisK
 
-NexisK is the kernel at the center of NexisOS.
+**NexisK** is the kernel at the center of NexisOS.
 
-It provides the low-level execution environment and contains the core operating-system mechanisms.
+It provides the low-level execution environment and contains the fundamental operating-system mechanisms used by NexisOS.
 
 NexisK currently targets **32-bit x86 (i386)** and is developed primarily using:
 
 * C
-* NASM assembly
-* freestanding development
-* direct hardware access
+* NASM Assembly
+* Freestanding development
+* Direct hardware access
 
-The kernel contains components such as:
+Current kernel subsystems include:
 
 * Global Descriptor Table (GDT)
 * Interrupt Descriptor Table (IDT)
 * Programmable Interrupt Controller (PIC)
 * Programmable Interval Timer (PIT)
 * Physical Memory Manager (PMM)
-* Keyboard handling
-* PS/2 mouse handling
 * VGA text output
 * Serial output
+* PS/2 keyboard handling
+* PS/2 mouse handling
 * System call infrastructure
 * Initial process infrastructure
 
-NexisOS provides the environment where these components are integrated and exercised together.
+NexisOS acts as the practical environment in which these kernel components are integrated and tested together.
 
 ## NexisLoader
 
-NexisOS uses the **NexisLoader** bootloader as part of its boot process.
+**NexisLoader** is the custom BIOS bootloader used by the Nexis ecosystem.
 
-NexisLoader is an independent x86 BIOS bootloader developed specifically for the Nexis ecosystem.
+It is maintained as an independent project from NexisK and NexisOS.
 
 Its responsibilities include:
 
-* Initial bootstrapping
-* Kernel loading
+* Initial BIOS bootstrapping
+* Loading the next boot stage
+* Loading the kernel
 * Kernel selection
-* Memory map detection
-* Passing hardware information to the kernel
+* E820 memory map detection
+* Passing system information to the kernel
 * Preparing the environment required by NexisK
 
-The bootloader and kernel are intentionally separated into independent projects.
+The separation between NexisLoader and NexisK is intentional.
 
-This allows NexisK to remain focused on kernel development while NexisLoader handles the early boot environment.
+The bootloader is responsible for establishing the environment required to start the kernel, while NexisK is responsible for the operating-system kernel itself.
+
+NexisOS then provides the practical operating-system environment in which the kernel operates.
 
 ## Memory Management
 
-NexisOS uses the memory information provided by the bootloader to initialize the kernel's physical memory management.
+NexisOS uses the memory information provided by NexisLoader to initialize physical memory management inside NexisK.
 
-The Physical Memory Manager currently works with the system's **E820 memory map**.
+The current implementation uses the **BIOS E820 memory map** to identify usable physical memory regions.
 
-Usable memory regions are identified and divided into **4 KiB pages**.
+Usable regions are divided into **4 KiB pages**.
 
-The current implementation uses a bitmap representation where each physical page is represented by one byte.
+The current physical memory representation uses a bitmap-like byte array in which each physical page is represented by one byte.
 
 ```text
-E820 memory map
+E820 Memory Map
        │
        ▼
 Identify usable regions
        │
        ▼
-Calculate number of pages
+Calculate page count
        │
        ▼
 Calculate physical addresses
        │
        ▼
-Calculate bitmap indices
+Calculate page indices
        │
        ▼
 Track usable physical pages
 ```
 
-The PMM is still under development and will eventually provide complete page allocation, freeing, and memory reservation mechanisms.
+The current PMM implementation is an initial stage.
+
+The planned memory-management architecture includes:
+
+* Physical page allocation
+* Physical page freeing
+* Memory reservation
+* Complete bitmap initialization
+* Paging
+* Virtual memory
+* Kernel memory protection
 
 ## Interrupts
 
-Hardware interrupts are an essential part of NexisOS.
+Interrupt handling is a fundamental part of NexisOS.
 
-The kernel uses:
+The kernel currently uses:
 
 * IDT
 * PIC
@@ -174,41 +215,43 @@ The kernel uses:
 * Assembly interrupt entry points
 * C interrupt handlers
 
-For example, the keyboard is connected through **IRQ1**, which is mapped through the PIC into the kernel's interrupt vector space.
+Hardware events enter the kernel through the interrupt subsystem.
 
-The general flow is:
+For example, the PS/2 keyboard generates **IRQ1**.
+
+The general interrupt path is:
 
 ```text
-Hardware
-   │
-   ▼
-IRQ
-   │
-   ▼
-PIC
-   │
-   ▼
-IDT
-   │
-   ▼
-Assembly ISR
-   │
-   ▼
-C Handler
-   │
-   ▼
-Kernel subsystem
+Hardware Device
+      │
+      ▼
+     IRQ
+      │
+      ▼
+     PIC
+      │
+      ▼
+     IDT
+      │
+      ▼
+ Assembly ISR
+      │
+      ▼
+ C Handler
+      │
+      ▼
+Kernel Subsystem
 ```
 
-This structure allows hardware events to enter the kernel through a controlled interrupt path.
+This structure keeps hardware interrupt entry controlled and separated from higher-level kernel logic.
 
 ## Keyboard and Shell
 
-NexisOS includes a basic keyboard input system using the PS/2 keyboard interface.
+NexisOS currently provides keyboard input through the PS/2 keyboard interface.
 
-Keyboard scancodes are translated into characters and passed to a small shell implementation.
+Keyboard scancodes are processed by the kernel and translated into characters for the shell.
 
-The current shell provides a basic command-line interface:
+The system provides a basic command-line interface:
 
 ```text
 NexisK> help
@@ -219,47 +262,50 @@ Available commands:
   version
 ```
 
-The shell currently supports:
+Current shell functionality includes:
 
 * Character input
-* Numbers
+* Numeric input
 * Spaces
 * Enter
 * Backspace
+* Input buffering
 * Basic command parsing
 * Basic commands
 
-The shell is intentionally simple at this stage.
+The shell is intentionally small.
 
-It exists primarily as a practical interface for interacting with the kernel while the operating system is being developed.
+Its primary purpose is to provide a practical interface for interacting with and testing the kernel while the operating system continues to evolve.
 
 ## VGA Terminal
 
-NexisOS currently uses VGA text mode for basic terminal output.
+NexisOS currently uses VGA text mode for terminal output.
 
-The VGA driver provides:
+The VGA subsystem provides:
 
+* Direct VGA memory access
 * Text output
 * Screen clearing
 * Cursor position tracking
-* Backspace handling
 * Newline handling
-* Direct access to VGA memory
+* Backspace handling
 
-The terminal cursor is maintained independently by the VGA driver.
+The cursor position is maintained by the VGA driver itself.
 
-This allows higher-level components such as the shell to request operations without directly manipulating VGA memory.
+Higher-level components such as the shell do not need to directly manipulate VGA memory.
+
+This keeps terminal behavior separated from shell logic.
 
 ## Current Status
 
 NexisOS is currently in **early operating-system development**.
 
-The project has moved beyond simply creating isolated kernel components and is now focused on integrating those components into a functioning operating-system environment.
+The project has progressed beyond isolated kernel experiments and is focused on integrating the bootloader, kernel, memory management, interrupt system, drivers, input handling, and shell into a single bootable system.
 
-### Currently implemented
+### Implemented
 
 * [x] x86 kernel boot
-* [x] Protected mode
+* [x] 32-bit protected mode
 * [x] GDT
 * [x] IDT
 * [x] PIC
@@ -269,18 +315,31 @@ The project has moved beyond simply creating isolated kernel components and is n
 * [x] Keyboard IRQ
 * [x] Keyboard input
 * [x] Basic shell
-* [x] Shell command parsing
-* [x] Backspace
-* [x] Initial PMM
+* [x] Shell input buffer
+* [x] Basic command parsing
+* [x] `help`
+* [x] `clear`
+* [x] `version`
+* [x] Backspace handling
 * [x] E820 memory map integration
+* [x] Initial physical memory manager
 * [x] Physical page tracking
+* [x] PS/2 mouse infrastructure
+* [x] Initial process infrastructure
+
+### In Development
+
 * [ ] Complete physical page allocation
 * [ ] Physical page freeing
 * [ ] Complete memory reservation
+* [ ] Paging
 * [ ] Virtual memory
 * [ ] Process execution
+* [ ] Context switching
 * [ ] Scheduler
+* [ ] Storage subsystem
 * [ ] Filesystem
+* [ ] User mode
 * [ ] User-space programs
 
 ## Features
@@ -289,20 +348,20 @@ The project has moved beyond simply creating isolated kernel components and is n
 
 * 32-bit x86 kernel
 * Freestanding C environment
-* NASM assembly
+* NASM Assembly
 * Protected mode execution
 * GDT
 * IDT
-* Interrupt handling
 * PIC
 * PIT
+* Hardware interrupt handling
 * System call infrastructure
 * Initial process infrastructure
 
 ### Memory
 
 * E820 memory map
-* Physical memory manager
+* Initial physical memory manager
 * 4 KiB page tracking
 * Bitmap-based physical page representation
 * Usable memory detection
@@ -310,96 +369,159 @@ The project has moved beyond simply creating isolated kernel components and is n
 ### Hardware
 
 * VGA text mode
-* Serial port
+* Serial output
 * PS/2 keyboard
 * PS/2 mouse
-* Programmable interrupt controller
-* Programmable interval timer
+* Programmable Interrupt Controller
+* Programmable Interval Timer
 
 ### User Interface
 
 * VGA terminal
 * Keyboard input
-* Shell prompt
+* Interactive shell
+* Input buffering
 * Command parsing
 * `help`
 * `clear`
 * `version`
 * Backspace support
 
+### Boot
+
+* Custom NexisLoader boot chain
+* BIOS boot support
+* Kernel loading
+* E820 memory detection
+* Bootable disk image
+* Bootable ISO generation
+
 ## Development Philosophy
 
-NexisOS follows a simple principle:
+NexisOS follows one fundamental principle:
 
 > **Build the system from the lowest practical level upward.**
 
-The project avoids depending on a large external kernel framework.
+The project avoids hiding the operating system behind large external frameworks.
 
-Subsystems are implemented directly and then integrated into the operating system.
+Subsystems are implemented directly, tested independently, and then integrated into the complete system.
 
-This makes failures useful: when something breaks, the goal is to understand which layer failed rather than hide the problem behind a high-level abstraction.
+This makes failures useful.
 
-The project is also used as a practical environment for validating NexisK development.
+When something breaks, the objective is to identify the layer responsible for the failure rather than hide it behind a high-level abstraction.
 
-A subsystem that works independently is one thing.
+NexisOS also acts as a practical validation environment for NexisK.
 
-A subsystem that survives integration with the bootloader, kernel, interrupt system, memory manager, drivers, and shell is a much stronger test.
+A subsystem that works in isolation is useful.
+
+A subsystem that continues working after being integrated with the bootloader, kernel, interrupt subsystem, memory manager, drivers, and shell is a much stronger validation of the implementation.
 
 ## Testing
 
-NexisOS is intended to be tested in multiple environments.
+NexisOS is intended to be tested in both virtualized environments and physical x86 hardware.
 
 ### Emulation and Virtual Machines
 
-Development can be performed using x86 virtualization and emulation environments.
+Virtual machines and x86 emulators are useful during development because they provide:
 
-These environments are useful for:
+* Fast iteration
+* Reproducible environments
+* Easier debugging
+* Kernel crash investigation
+* Hardware-independent development
 
-* Rapid testing
-* Debugging
-* Reproducible failures
-* Development without physical hardware
+The primary development workflow can use QEMU.
 
 ### Real Hardware
 
-Real x86 hardware is an important part of the project.
+Real hardware is also an important validation target.
 
-Hardware testing exposes problems that may not appear under emulation, including:
+Physical machines can expose behavior that may not appear under emulation, including:
 
 * Firmware differences
 * Hardware initialization differences
 * Timing differences
-* Memory layout differences
+* Different memory layouts
 * Device-specific behavior
 
-NexisOS therefore aims to eventually validate its components through actual hardware execution rather than relying exclusively on virtual machines.
+NexisOS therefore aims to validate the system on actual x86 hardware as development progresses.
 
-## Build
+## Building
 
 NexisOS uses a freestanding x86 build environment.
 
-Typical components include:
+Required development tools include:
 
 * GCC
 * NASM
 * GNU Binutils
 * GNU Make
-* x86 linker scripts
+* An i386-compatible linker
 
-The project can be built using the repository's Makefile.
+The repository's Makefile builds the boot components, kernel objects, final boot image, and bootable ISO.
+
+Build the system with:
 
 ```bash
 make
 ```
 
-The resulting artifacts are placed inside the `build/` directory.
+The final ISO is generated inside the `build/` directory.
+
+The generated image can then be used with QEMU or written to appropriate boot media for hardware testing.
+
+### Run with QEMU
+
+```bash
+make run
+```
+
+### Development / Debug Mode
+
+```bash
+make dev
+```
+
+### Clean Build Artifacts
+
+```bash
+make clean
+```
+
+The build process follows this general pipeline:
+
+```text
+NexisK Sources
+      │
+      ▼
+C / Assembly Objects
+      │
+      ▼
+   Linker
+      │
+      ▼
+NexisK Binary
+      │
+      ▼
+NexisLoader + NexisK
+      │
+      ▼
+Boot Image
+      │
+      ▼
+Bootable ISO
+```
+
+The ISO is the final distributable boot image produced by the build system.
 
 ## Project Structure
 
-A simplified project structure looks like:
+A simplified project structure is:
 
 ```text
 NexisOS/
+├── boot/
+│   └── stage2.S
 ├── kernel/
 │   ├── boot/
 │   ├── drivers/
@@ -412,11 +534,14 @@ NexisOS/
 │   └── timer/
 ├── build/
 ├── linker.ld
-├── makefile
-└── readme.md
+├── Makefile
+├── LICENSE
+└── README.md
 ```
 
-The exact structure may evolve as the operating system grows.
+The exact directory structure may evolve as the operating system grows.
+
+Generated build artifacts are kept inside `build/`.
 
 ## Roadmap
 
@@ -430,9 +555,10 @@ The exact structure may evolve as the operating system grows.
 * [x] Basic interrupt handling
 * [x] System call infrastructure
 * [x] Initial process infrastructure
-* [ ] Improve kernel process management
 * [ ] Context switching
+* [ ] Process management
 * [ ] Scheduler
+* [ ] Improved kernel services
 
 ### Memory
 
@@ -443,8 +569,8 @@ The exact structure may evolve as the operating system grows.
 * [ ] Memory reservation
 * [ ] Page allocation
 * [ ] Page freeing
-* [ ] Virtual memory
 * [ ] Paging
+* [ ] Virtual memory
 
 ### Drivers
 
@@ -454,10 +580,12 @@ The exact structure may evolve as the operating system grows.
 * [x] PS/2 mouse
 * [ ] Improved keyboard support
 * [ ] Additional hardware drivers
+* [ ] Storage drivers
 
 ### Shell
 
 * [x] Input buffer
+* [x] Character input
 * [x] Command parsing
 * [x] `help`
 * [x] `clear`
@@ -475,6 +603,7 @@ The exact structure may evolve as the operating system grows.
 * [ ] Block device abstraction
 * [ ] Filesystem
 * [ ] File operations
+* [ ] Persistent storage
 
 ### User Space
 
@@ -486,60 +615,63 @@ The exact structure may evolve as the operating system grows.
 
 ## Relationship Between the Nexis Projects
 
-NexisOS is part of a larger low-level development ecosystem.
+NexisOS is part of a broader low-level systems ecosystem.
+
+The projects have distinct responsibilities:
+
+| Project         | Responsibility                         |
+| --------------- | -------------------------------------- |
+| **NexisLoader** | Bootloader and early boot environment  |
+| **NexisK**      | Kernel development                     |
+| **NexisOS**     | Practical operating-system integration |
+
+The relationship can be represented as:
 
 ```text
 NexisLoader
      │
-     ▼
-  Boot Environment
-     │
+     │ boots and prepares
      ▼
    NexisK
      │
-     ▼
-  Kernel Services
-     │
+     │ provides kernel services
      ▼
   NexisOS
      │
+     │ integrates and exercises
      ▼
 Operating System
 ```
 
-Each project has a different responsibility:
-
-| Project         | Responsibility                             |
-| --------------- | ------------------------------------------ |
-| **NexisLoader** | Bootloader and early system initialization |
-| **NexisK**      | Kernel development                         |
-| **NexisOS**     | Practical operating-system integration     |
-
-This separation allows the kernel to evolve independently while NexisOS serves as the environment where the kernel is tested as a complete operating system.
+This separation allows NexisLoader to evolve as a boot project, NexisK to remain focused on kernel development, and NexisOS to serve as the environment where the kernel is used as a complete operating system.
 
 ## Limitations
 
-NexisOS is an early-stage operating system.
+NexisOS is an early-stage operating system and is not intended to provide the feature set of a general-purpose operating system.
 
-It currently lacks many features expected from a general-purpose operating system, including:
+Current limitations include:
 
-* Complete virtual memory
-* Complete process management
-* User mode
-* Filesystem
-* Persistent storage support
-* Full device management
-* Mature scheduler
-* Advanced shell functionality
-* Networking
-* SMP support
-* Security mechanisms
+* 32-bit x86 architecture
+* No complete virtual memory subsystem
+* No mature process scheduler
+* No user mode
+* No filesystem
+* No persistent storage layer
+* Limited device support
+* Limited shell functionality
+* No networking stack
+* No SMP support
+* Limited security mechanisms
 
-These are expected limitations at this stage of development.
+These limitations are expected at the current development stage.
 
 ## Status
 
-**Development stage:** Early OS development
+**Project:** NexisOS
+
+**Release:** OS v0.0.8
+
+**Development Stage:** Early OS development
 
 **Architecture:** x86 / i386
 
@@ -547,9 +679,11 @@ These are expected limitations at this stage of development.
 
 **Bootloader:** NexisLoader
 
-**Language:** C / NASM Assembly
+**Languages:** C / NASM Assembly
 
-**Build system:** GNU Make
+**Build System:** GNU Make
+
+**Boot Format:** Bootable ISO
 
 **License:** GPL-2.0-only
 
