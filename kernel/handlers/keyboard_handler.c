@@ -56,7 +56,7 @@ static void shell_execute(void)
     if (shell_index == 0)
     {
         shell_index = 0;
-        term_print("NexisK> ");
+        term_print("NexisOS> ");
         return;
     }
 
@@ -103,8 +103,8 @@ static void shell_execute(void)
                 shell_buffer[5] == 'o' &&
                 shell_buffer[6] == 'n')
             {
-                term_print("Kernel: v0.8.8\n");
-                term_print("OS version: v0.0.1\n");
+                term_print("Kernel: v0.8.9 - Stable\n");
+                term_print("OS version: v0.0.9 - Unstable\n");
             }
             else
             {

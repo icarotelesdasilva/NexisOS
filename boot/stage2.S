@@ -200,10 +200,10 @@ nexisloader_msg:
     db "NexisLoader Menu:", 0
 
 select_msg:
-    db "> NexisK", 0
+    db "> NexisOS", 0
 
 loading_msg:
-    db "Loading NexisK...", 0
+    db "Loading NexisOS...", 0
 
 e820_error:
     db "E820 failed!", 0
