@@ -2,7 +2,7 @@ bits 16
 org 0x7c00
 
 boot_drive db 0
-
+%include "stage2_sectors.inc"
 
 start:
     cli
@@ -20,7 +20,7 @@ start:
     xor bx, bx
 
     mov ah, 0x02
-    mov al, 17
+    mov al, STAGE2_SECTORS
     mov ch, 0
     mov cl, 2
     mov dh, 0
